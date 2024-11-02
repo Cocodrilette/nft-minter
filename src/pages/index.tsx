@@ -2,7 +2,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +21,13 @@ import { isURL } from "@/lib/utils";
 import { appConfig } from "@/constant";
 
 const Home: NextPage = () => {
-  const { writeContract } = useWriteContract();
+  const { writeContract, isSuccess, isPending, isError, error } =
+    useWriteContract();
   const { isConnected } = useAccount();
 
+  const [validatedTokenURI, setValidatedTokenURI] = useState<string | null>(
+    null
+  );
   const [formData, setFormData] = useState({
     userAddress: "",
     tokenURI: "",
@@ -31,6 +35,11 @@ const Home: NextPage = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    if (name === "tokenURI" && isURL(value)) {
+      setValidatedTokenURI(value);
+    }
+
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
@@ -60,6 +69,23 @@ const Home: NextPage = () => {
       args: [formData.userAddress, formData.tokenURI],
     });
   };
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success("NFT minted successfully");
+      setFormData({ userAddress: "", tokenURI: "" });
+      setValidatedTokenURI(null);
+    }
+
+    if (isError) {
+      console.error(error);
+      toast.error("An error occurred while minting the NFT");
+    }
+
+    if (isPending) {
+      toast.info("Minting NFT...");
+    }
+  }, [isSuccess, isPending, isError]);
 
   return (
     <div className={styles.container}>
@@ -98,7 +124,7 @@ const Home: NextPage = () => {
                   onChange={handleChange}
                   placeholder="Enter the user address"
                   required
-                  disabled={!isConnected}
+                  disabled={!isConnected || isPending}
                 />
               </div>
               <div className="space-y-2">
@@ -111,17 +137,28 @@ const Home: NextPage = () => {
                   onChange={handleChange}
                   placeholder="Enter the token URI"
                   required
-                  disabled={!isConnected}
+                  disabled={!isConnected || isPending}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button disabled={!isConnected} type="submit" className="w-full">
+              <Button
+                disabled={!isConnected || isPending}
+                type="submit"
+                className="w-full"
+              >
                 Mint
               </Button>
             </CardFooter>
           </form>
         </Card>
+        {validatedTokenURI && (
+          <img
+            className="mt-10 max-w-md"
+            src={validatedTokenURI}
+            alt="Validated Token URI"
+          />
+        )}
       </main>
     </div>
   );
