@@ -18,6 +18,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { isAddress } from "viem";
 import "react-toastify/dist/ReactToastify.css";
 import { isURL } from "@/lib/utils";
+import { appConfig } from "@/constant";
 
 const Home: NextPage = () => {
   const { writeContract } = useWriteContract();
@@ -52,7 +53,12 @@ const Home: NextPage = () => {
 
     if (error) return;
 
-    console.log("Form submitted with data:", formData);
+    writeContract({
+      abi: appConfig.contractABI,
+      address: appConfig.contractAddress,
+      functionName: "safeMint",
+      args: [formData.userAddress, formData.tokenURI],
+    });
   };
 
   return (
